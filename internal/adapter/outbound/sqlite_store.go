@@ -4,13 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"strings"
 	"time"
 
+	"modernc.org/sqlite"
 	_ "modernc.org/sqlite"
+	sqlitelib "modernc.org/sqlite/lib"
 
-	"github.com/ahmad-banikamali/internal/core/domain"
-	"github.com/ahmad-banikamali/internal/core/port"
+	"github.com/ahmad-banikamali/shortener/internal/core/domain"
+	"github.com/ahmad-banikamali/shortener/internal/core/port"
 )
 
 var _ port.LinkStore = (*SQLiteStore)(nil)
@@ -46,8 +47,11 @@ func (s *SQLiteStore) Save(ctx context.Context, l domain.Link) error {
 		l.Code, l.URL, l.CreatedAt.Unix())
 	if err != nil {
 		// Translate the adapter-specific error into the domain error.
-		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
-			return domain.ErrCodeTaken
+		if se, ok := errors.AsType[*sqlite.Error](err); ok {
+			switch se.Code() {
+			case sqlitelib.SQLITE_CONSTRAINT_PRIMARYKEY, sqlitelib.SQLITE_CONSTRAINT_UNIQUE:
+				return domain.ErrCodeTaken
+			}
 		}
 		return err
 	}

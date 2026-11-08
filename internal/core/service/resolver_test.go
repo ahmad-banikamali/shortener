@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ahmad-banikamali/internal/core/domain"
-	"github.com/ahmad-banikamali/internal/core/service"
+	"github.com/ahmad-banikamali/shortener/internal/core/domain"
+	"github.com/ahmad-banikamali/shortener/internal/core/service"
 )
 
 func TestResolve_Found(t *testing.T) {

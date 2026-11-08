@@ -3,7 +3,7 @@ package port
 import (
 	"context"
 
-	"github.com/ahmad-banikamali/internal/core/domain"
+	"github.com/ahmad-banikamali/shortener/internal/core/domain"
 )
 
 type LinkStore interface {

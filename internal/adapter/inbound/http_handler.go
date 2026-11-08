@@ -5,8 +5,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/ahmad-banikamali/internal/core/domain"
-	"github.com/ahmad-banikamali/internal/core/port"
+	"github.com/ahmad-banikamali/shortener/internal/core/domain"
+	"github.com/ahmad-banikamali/shortener/internal/core/port"
 )
 
 type HTTPHandler struct {

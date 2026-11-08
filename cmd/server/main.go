@@ -3,10 +3,11 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
-	"github.com/ahmad-banikamali/internal/adapter/inbound"
-	"github.com/ahmad-banikamali/internal/adapter/outbound"
-	"github.com/ahmad-banikamali/internal/core/service"
+	"github.com/ahmad-banikamali/shortener/internal/adapter/inbound"
+	"github.com/ahmad-banikamali/shortener/internal/adapter/outbound"
+	"github.com/ahmad-banikamali/shortener/internal/core/service"
 )
 
 func main() {
@@ -28,5 +29,6 @@ func main() {
 	handler.Register(mux)
 
 	log.Println("listening on :8080")
-	log.Fatal(http.ListenAndServe(":8080", mux))
+	srv := &http.Server{Addr: ":8080", Handler: mux, ReadHeaderTimeout: 5 * time.Second}
+	log.Fatal(srv.ListenAndServe())
 }

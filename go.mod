@@ -1,4 +1,4 @@
-module github.com/ahmad-banikamali
+module github.com/ahmad-banikamali/shortener
 
 go 1.27
 

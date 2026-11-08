@@ -3,9 +3,9 @@ package outbound_test
 import (
 	"testing"
 
-	"github.com/ahmad-banikamali/internal/adapter/outbound"
-	"github.com/ahmad-banikamali/internal/adapter/outbound/storetest"
-	"github.com/ahmad-banikamali/internal/core/port"
+	"github.com/ahmad-banikamali/shortener/internal/adapter/outbound"
+	"github.com/ahmad-banikamali/shortener/internal/adapter/outbound/storetest"
+	"github.com/ahmad-banikamali/shortener/internal/core/port"
 )
 
 func TestMemoryStore(t *testing.T) {

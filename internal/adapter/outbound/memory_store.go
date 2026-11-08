@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/ahmad-banikamali/internal/core/domain"
-	"github.com/ahmad-banikamali/internal/core/port"
+	"github.com/ahmad-banikamali/shortener/internal/core/domain"
+	"github.com/ahmad-banikamali/shortener/internal/core/port"
 )
 
 // Compile-time check: MemoryStore must satisfy the port.

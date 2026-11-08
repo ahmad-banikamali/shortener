@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ahmad-banikamali/internal/core/domain"
-	"github.com/ahmad-banikamali/internal/core/port"
+	"github.com/ahmad-banikamali/shortener/internal/core/domain"
+	"github.com/ahmad-banikamali/shortener/internal/core/port"
 )
 
 func Run(t *testing.T, newStore func(t *testing.T) port.LinkStore) {
