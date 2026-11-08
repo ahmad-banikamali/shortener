@@ -20,6 +20,22 @@ type SQLiteStore struct {
 	db *sql.DB
 }
 
+func (s *SQLiteStore) IncrementVisits(ctx context.Context, code string) error {
+	res, err := s.db.ExecContext(ctx,
+		`UPDATE links SET visits = visits + 1 WHERE code = ?`, code)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return domain.ErrNotFound
+	}
+	return nil
+}
+
 func NewSQLiteStore(path string) (*SQLiteStore, error) {
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
@@ -28,10 +44,11 @@ func NewSQLiteStore(path string) (*SQLiteStore, error) {
 	db.SetMaxOpenConns(1) // SQLite allows one writer; avoids "database is locked"
 
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS links (
-		code       TEXT PRIMARY KEY,
-		url        TEXT NOT NULL,
-		created_at INTEGER NOT NULL
-	)`)
+	code       TEXT PRIMARY KEY,
+	url        TEXT NOT NULL,
+	created_at INTEGER NOT NULL,
+	visits     INTEGER NOT NULL DEFAULT 0
+)`)
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -62,8 +79,8 @@ func (s *SQLiteStore) FindByCode(ctx context.Context, code string) (domain.Link,
 	var l domain.Link
 	var created int64
 	err := s.db.QueryRowContext(ctx,
-		`SELECT code, url, created_at FROM links WHERE code = ?`, code).
-		Scan(&l.Code, &l.URL, &created)
+		`SELECT code, url, created_at, visits FROM links WHERE code = ?`, code).
+		Scan(&l.Code, &l.URL, &created, &l.Visits)
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.Link{}, domain.ErrNotFound
 	}

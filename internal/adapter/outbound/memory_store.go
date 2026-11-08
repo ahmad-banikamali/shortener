@@ -16,6 +16,18 @@ type MemoryStore struct {
 	links map[string]domain.Link
 }
 
+func (m *MemoryStore) IncrementVisits(_ context.Context, code string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	l, ok := m.links[code]
+	if !ok {
+		return domain.ErrNotFound
+	}
+	l.Visits++
+	m.links[code] = l
+	return nil
+}
+
 func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{links: make(map[string]domain.Link)}
 }

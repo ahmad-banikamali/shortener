@@ -22,9 +22,9 @@ func main() {
 	// Core
 	shortener := service.NewShortener(store, codes)
 	resolver := service.NewResolver(store)
+	stats := service.NewStatsService(store)
 
-	// Inbound adapter
-	handler := inbound.NewHTTPHandler(shortener, resolver, "http://localhost:8080")
+	handler := inbound.NewHTTPHandler(shortener, resolver, stats, "http://localhost:8080")
 	mux := http.NewServeMux()
 	handler.Register(mux)
 

@@ -26,3 +26,17 @@ func TestResolve_NotFound(t *testing.T) {
 		t.Fatalf("expected ErrNotFound, got %v", err)
 	}
 }
+
+func TestResolve_IncrementsVisits(t *testing.T) {
+	store := &fakeStore{links: map[string]domain.Link{
+		"abc": {Code: "abc", URL: "https://example.com"},
+	}}
+	svc := service.NewResolver(store)
+
+	svc.Resolve(context.Background(), "abc")
+	svc.Resolve(context.Background(), "abc")
+
+	if store.links["abc"].Visits != 2 {
+		t.Fatalf("expected 2 visits, got %d", store.links["abc"].Visits)
+	}
+}

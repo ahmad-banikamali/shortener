@@ -21,5 +21,11 @@ func (r *Resolver) Resolve(ctx context.Context, code string) (domain.Link, error
 	if code == "" {
 		return domain.Link{}, domain.ErrNotFound
 	}
-	return r.store.FindByCode(ctx, code)
+	link, err := r.store.FindByCode(ctx, code)
+	if err != nil {
+		return domain.Link{}, err
+	}
+	// Business decision: a failed counter must not break the redirect.
+	_ = r.store.IncrementVisits(ctx, code)
+	return link, nil
 }

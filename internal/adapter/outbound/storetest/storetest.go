@@ -39,4 +39,22 @@ func Run(t *testing.T, newStore func(t *testing.T) port.LinkStore) {
 			t.Fatalf("expected ErrNotFound, got %v", err)
 		}
 	})
+
+	t.Run("increment visits", func(t *testing.T) {
+		s := newStore(t)
+		_ = s.Save(ctx, link)
+		_ = s.IncrementVisits(ctx, "abc")
+		_ = s.IncrementVisits(ctx, "abc")
+		got, _ := s.FindByCode(ctx, "abc")
+		if got.Visits != 2 {
+			t.Fatalf("expected 2 visits, got %d", got.Visits)
+		}
+	})
+
+	t.Run("increment missing code", func(t *testing.T) {
+		s := newStore(t)
+		if err := s.IncrementVisits(ctx, "missing"); !errors.Is(err, domain.ErrNotFound) {
+			t.Fatalf("expected ErrNotFound, got %v", err)
+		}
+	})
 }

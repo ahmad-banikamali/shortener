@@ -11,6 +11,16 @@ import (
 
 type fakeStore struct{ links map[string]domain.Link }
 
+func (f *fakeStore) IncrementVisits(_ context.Context, code string) error {
+	l, ok := f.links[code]
+	if !ok {
+		return domain.ErrNotFound
+	}
+	l.Visits++
+	f.links[code] = l
+	return nil
+}
+
 func (f *fakeStore) Save(_ context.Context, l domain.Link) error {
 	if _, ok := f.links[l.Code]; ok {
 		return domain.ErrCodeTaken

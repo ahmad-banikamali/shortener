@@ -11,4 +11,5 @@ type LinkStore interface {
 	Save(ctx context.Context, link domain.Link) error
 	// FindByCode must return domain.ErrNotFound if missing.
 	FindByCode(ctx context.Context, code string) (domain.Link, error)
+	IncrementVisits(ctx context.Context, code string) error
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/ahmad-banikamali/shortener/internal/core/domain"
 	"github.com/ahmad-banikamali/shortener/internal/core/port"
@@ -12,15 +13,17 @@ import (
 type HTTPHandler struct {
 	shorten port.ShortenUseCase
 	resolve port.ResolveUseCase
+	stats   port.StatsUseCase
 	baseURL string
 }
 
-func NewHTTPHandler(s port.ShortenUseCase, r port.ResolveUseCase, baseURL string) *HTTPHandler {
-	return &HTTPHandler{shorten: s, resolve: r, baseURL: baseURL}
+func NewHTTPHandler(s port.ShortenUseCase, r port.ResolveUseCase, st port.StatsUseCase, baseURL string) *HTTPHandler {
+	return &HTTPHandler{shorten: s, resolve: r, stats: st, baseURL: baseURL}
 }
 
 func (h *HTTPHandler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /links", h.handleShorten)
+	mux.HandleFunc("GET /links/{code}/stats", h.handleStats)
 	mux.HandleFunc("GET /{code}", h.handleResolve)
 }
 
@@ -63,6 +66,25 @@ func (h *HTTPHandler) handleResolve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, link.URL, http.StatusFound)
+}
+
+type statsResponse struct {
+	Code      string    `json:"code"`
+	URL       string    `json:"url"`
+	Visits    int64     `json:"visits"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+func (h *HTTPHandler) handleStats(w http.ResponseWriter, r *http.Request) {
+	link, err := h.stats.Stats(r.Context(), r.PathValue("code"))
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(statsResponse{
+		Code: link.Code, URL: link.URL, Visits: link.Visits, CreatedAt: link.CreatedAt,
+	})
 }
 
 // The adapter translates domain errors into HTTP status codes.

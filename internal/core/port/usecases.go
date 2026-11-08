@@ -13,3 +13,7 @@ type ShortenUseCase interface {
 type ResolveUseCase interface {
 	Resolve(ctx context.Context, code string) (domain.Link, error)
 }
+
+type StatsUseCase interface {
+	Stats(ctx context.Context, code string) (domain.Link, error)
+}

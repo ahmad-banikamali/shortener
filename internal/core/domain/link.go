@@ -16,6 +16,7 @@ type Link struct {
 	Code      string
 	URL       string
 	CreatedAt time.Time
+	Visits    int64
 }
 
 // ValidateURL is a business rule, so it lives in the core.
