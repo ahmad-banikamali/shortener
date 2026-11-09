@@ -7,11 +7,13 @@ import (
 
 	"github.com/ahmad-banikamali/shortener/internal/adapter/inbound"
 	"github.com/ahmad-banikamali/shortener/internal/adapter/outbound"
+	"github.com/ahmad-banikamali/shortener/internal/config"
 	"github.com/ahmad-banikamali/shortener/internal/core/service"
 )
 
 func main() {
-	store, err := outbound.NewSQLiteStore("shortener.db")
+	cfg := config.Load()
+	store, err := outbound.NewSQLiteStore(cfg.DBPath)
 	if err != nil {
 		log.Fatal(err)
 	}

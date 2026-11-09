@@ -57,7 +57,7 @@ func TestResolve_ExpiredLink_ReturnsNotFound(t *testing.T) {
 	shortener := service.NewShortener(store, &seqCodes{codes: []string{"abc"}}, clock)
 	resolver := service.NewResolver(store, clock)
 
-	shortener.Shorten(context.Background(), "https://example.com", time.Hour)
+	_, _ = shortener.Shorten(context.Background(), "https://example.com", time.Hour)
 
 	clock.now = start.Add(30 * time.Minute) // before expiry
 	if _, err := resolver.Resolve(context.Background(), "abc"); err != nil {

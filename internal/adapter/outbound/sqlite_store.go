@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"modernc.org/sqlite"
-	_ "modernc.org/sqlite"
 	sqlitelib "modernc.org/sqlite/lib"
 
 	"github.com/ahmad-banikamali/shortener/internal/core/domain"
@@ -89,10 +88,6 @@ func (s *SQLiteStore) FindByCode(ctx context.Context, code string) (domain.Link,
 	err := s.db.QueryRowContext(ctx,
 		`SELECT code, url, created_at, visits, expires_at FROM links WHERE code = ?`, code).
 		Scan(&l.Code, &l.URL, &created, &l.Visits, &exp)
-	if exp.Valid {
-		t := time.Unix(exp.Int64, 0)
-		l.ExpiresAt = &t
-	}
 
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.Link{}, domain.ErrNotFound
@@ -100,6 +95,10 @@ func (s *SQLiteStore) FindByCode(ctx context.Context, code string) (domain.Link,
 	if err != nil {
 		return domain.Link{}, err
 	}
-	l.CreatedAt = time.Unix(created, 0)
+	if exp.Valid {
+		t := time.Unix(exp.Int64, 0).UTC()
+		l.ExpiresAt = &t
+	}
+	l.CreatedAt = time.Unix(created, 0).UTC()
 	return l, nil
 }
