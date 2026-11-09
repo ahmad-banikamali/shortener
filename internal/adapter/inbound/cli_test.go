@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ahmad-banikamali/shortener/internal/adapter/inbound"
+	"github.com/ahmad-banikamali/shortener/internal/core/domain"
 )
 
 func TestCLI_Shorten_PrintsShortURL(t *testing.T) {
@@ -22,7 +23,7 @@ func TestCLI_Shorten_PrintsShortURL(t *testing.T) {
 
 func TestCLI_Resolve_NotFound(t *testing.T) {
 	var out, errOut bytes.Buffer
-	cli := inbound.NewCLI(fakeShorten{}, fakeResolve{}, fakeStats{}, "http://x", &out, &errOut)
+	cli := inbound.NewCLI(fakeShorten{}, fakeResolve{err: domain.ErrNotFound}, fakeStats{}, "http://x", &out, &errOut)
 
 	code := cli.Run(context.Background(), []string{"resolve", "nope"})
 

@@ -91,3 +91,38 @@ func TestShorten_NegativeTTL(t *testing.T) {
 		t.Fatalf("expected ErrInvalidTTL, got %v", err)
 	}
 }
+
+func TestShorten_SetsExpiry(t *testing.T) {
+	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	store := &fakeStore{links: map[string]domain.Link{}}
+	svc := service.NewShortener(store, &seqCodes{codes: []string{"abc"}}, &fakeClock{now: now})
+
+	link, err := svc.Shorten(context.Background(), "https://example.com", time.Hour)
+
+	want := now.Add(time.Hour)
+	if err != nil || link.ExpiresAt == nil || !link.ExpiresAt.Equal(want) {
+		t.Fatalf("expected expiry %v, got %v (err %v)", want, link.ExpiresAt, err)
+	}
+}
+
+func TestShorten_ZeroTTL_NeverExpires(t *testing.T) {
+	store := &fakeStore{links: map[string]domain.Link{}}
+	svc := service.NewShortener(store, &seqCodes{codes: []string{"abc"}}, &fakeClock{now: time.Now()})
+
+	link, err := svc.Shorten(context.Background(), "https://example.com", 0)
+
+	if err != nil || link.ExpiresAt != nil {
+		t.Fatalf("expected nil expiry, got %v (err %v)", link.ExpiresAt, err)
+	}
+}
+
+func TestShorten_TTLAboveMax(t *testing.T) {
+	store := &fakeStore{links: map[string]domain.Link{}}
+	svc := service.NewShortener(store, &seqCodes{codes: []string{"abc"}}, &fakeClock{now: time.Now()})
+
+	_, err := svc.Shorten(context.Background(), "https://example.com", domain.MaxTTL+time.Second)
+
+	if !errors.Is(err, domain.ErrInvalidTTL) {
+		t.Fatalf("expected ErrInvalidTTL, got %v", err)
+	}
+}

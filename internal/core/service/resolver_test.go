@@ -69,3 +69,20 @@ func TestResolve_ExpiredLink_ReturnsNotFound(t *testing.T) {
 		t.Fatalf("expected ErrNotFound after expiry, got %v", err)
 	}
 }
+
+func TestResolve_ExpiredLink_DoesNotCountVisit(t *testing.T) {
+	exp := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	store := &fakeStore{links: map[string]domain.Link{
+		"abc": {Code: "abc", URL: "https://example.com", ExpiresAt: &exp},
+	}}
+	clock := &fakeClock{now: exp.Add(time.Minute)}
+
+	_, err := service.NewResolver(store, clock).Resolve(context.Background(), "abc")
+
+	if !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("expected ErrNotFound, got %v", err)
+	}
+	if store.links["abc"].Visits != 0 {
+		t.Fatalf("expired link must not be counted, got %d visits", store.links["abc"].Visits)
+	}
+}
