@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/ahmad-banikamali/shortener/internal/core/domain"
 	"github.com/ahmad-banikamali/shortener/internal/core/service"
@@ -50,9 +51,10 @@ func (s *seqCodes) Generate() (string, error) {
 
 func TestShorten_Success(t *testing.T) {
 	store := &fakeStore{links: map[string]domain.Link{}}
-	svc := service.NewShortener(store, &seqCodes{codes: []string{"abc"}})
+	clock := &fakeClock{}
+	svc := service.NewShortener(store, &seqCodes{codes: []string{"abc"}}, clock)
 
-	link, err := svc.Shorten(context.Background(), "https://example.com")
+	link, err := svc.Shorten(context.Background(), "https://example.com", time.Duration(5)*time.Second)
 	if err != nil || link.Code != "abc" {
 		t.Fatalf("got %v, %v", link, err)
 	}
@@ -60,9 +62,10 @@ func TestShorten_Success(t *testing.T) {
 
 func TestShorten_InvalidURL(t *testing.T) {
 	store := &fakeStore{links: map[string]domain.Link{}}
-	svc := service.NewShortener(store, &seqCodes{codes: []string{"abc"}})
+	clock := &fakeClock{now: time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)}
+	svc := service.NewShortener(store, &seqCodes{codes: []string{"abc"}}, clock)
 
-	_, err := svc.Shorten(context.Background(), "not a url")
+	_, err := svc.Shorten(context.Background(), "not a url", time.Duration(5)*time.Second)
 	if !errors.Is(err, domain.ErrInvalidURL) {
 		t.Fatalf("expected ErrInvalidURL, got %v", err)
 	}
@@ -70,10 +73,21 @@ func TestShorten_InvalidURL(t *testing.T) {
 
 func TestShorten_RetriesOnCollision(t *testing.T) {
 	store := &fakeStore{links: map[string]domain.Link{"aaa": {Code: "aaa"}}}
-	svc := service.NewShortener(store, &seqCodes{codes: []string{"aaa", "bbb"}})
+	clock := &fakeClock{now: time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)}
+	svc := service.NewShortener(store, &seqCodes{codes: []string{"aaa", "bbb"}}, clock)
 
-	link, err := svc.Shorten(context.Background(), "https://example.com")
+	link, err := svc.Shorten(context.Background(), "https://example.com", time.Duration(5)*time.Second)
 	if err != nil || link.Code != "bbb" {
 		t.Fatalf("expected code bbb, got %v, %v", link, err)
+	}
+}
+
+func TestShorten_NegativeTTL(t *testing.T) {
+	store := &fakeStore{links: map[string]domain.Link{}}
+	svc := service.NewShortener(store, &seqCodes{codes: []string{"abc"}}, &fakeClock{now: time.Now()})
+
+	_, err := svc.Shorten(context.Background(), "https://example.com", -time.Second)
+	if !errors.Is(err, domain.ErrInvalidTTL) {
+		t.Fatalf("expected ErrInvalidTTL, got %v", err)
 	}
 }

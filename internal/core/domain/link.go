@@ -10,13 +10,17 @@ var (
 	ErrInvalidURL = errors.New("invalid url")
 	ErrNotFound   = errors.New("link not found")
 	ErrCodeTaken  = errors.New("code already taken")
+	ErrInvalidTTL = errors.New("invalid ttl")
 )
+
+const MaxTTL = 10 * 365 * 24 * time.Hour
 
 type Link struct {
 	Code      string
 	URL       string
 	CreatedAt time.Time
 	Visits    int64
+	ExpiresAt *time.Time // nil = never expires
 }
 
 // ValidateURL is a business rule, so it lives in the core.
@@ -26,4 +30,8 @@ func ValidateURL(raw string) error {
 		return ErrInvalidURL
 	}
 	return nil
+}
+
+func (l Link) IsExpired(now time.Time) bool {
+	return l.ExpiresAt != nil && !now.Before(*l.ExpiresAt)
 }

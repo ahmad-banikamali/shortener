@@ -17,9 +17,10 @@ func main() {
 	}
 
 	codes := outbound.RandomCodeGenerator{Length: 6}
+	clock := outbound.SystemClock{}
 	cli := inbound.NewCLI(
-		service.NewShortener(store, codes),
-		service.NewResolver(store),
+		service.NewShortener(store, codes, clock),
+		service.NewResolver(store, clock),
 		service.NewStatsService(store),
 		"http://localhost:8080",
 		os.Stdout, os.Stderr,

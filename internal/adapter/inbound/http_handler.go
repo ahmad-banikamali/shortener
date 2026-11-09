@@ -28,7 +28,8 @@ func (h *HTTPHandler) Register(mux *http.ServeMux) {
 }
 
 type shortenRequest struct {
-	URL string `json:"url"`
+	URL        string `json:"url"`
+	TTLSeconds int64  `json:"ttl_seconds"`
 }
 
 type shortenResponse struct {
@@ -44,8 +45,12 @@ func (h *HTTPHandler) handleShorten(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid json", http.StatusBadRequest)
 		return
 	}
+	if req.TTLSeconds < 0 || req.TTLSeconds > int64(domain.MaxTTL/time.Second) {
+		writeError(w, domain.ErrInvalidTTL)
+		return
+	}
 
-	link, err := h.shorten.Shorten(r.Context(), req.URL)
+	link, err := h.shorten.Shorten(r.Context(), req.URL, time.Duration(req.TTLSeconds)*time.Second)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -94,6 +99,8 @@ func writeError(w http.ResponseWriter, err error) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	case errors.Is(err, domain.ErrNotFound):
 		http.Error(w, err.Error(), http.StatusNotFound)
+	case errors.Is(err, domain.ErrInvalidTTL):
+		http.Error(w, err.Error(), http.StatusBadRequest)
 	default:
 		http.Error(w, "internal error", http.StatusInternalServerError)
 	}

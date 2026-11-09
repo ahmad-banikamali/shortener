@@ -57,4 +57,26 @@ func Run(t *testing.T, newStore func(t *testing.T) port.LinkStore) {
 			t.Fatalf("expected ErrNotFound, got %v", err)
 		}
 	})
+
+	t.Run("expiry round trip", func(t *testing.T) {
+		s := newStore(t)
+		exp := time.Now().Add(time.Hour).Truncate(time.Second)
+		withExp := domain.Link{Code: "exp", URL: "https://example.com", CreatedAt: time.Now(), ExpiresAt: &exp}
+		if err := s.Save(ctx, withExp); err != nil {
+			t.Fatal(err)
+		}
+		got, err := s.FindByCode(ctx, "exp")
+		if err != nil || got.ExpiresAt == nil || !got.ExpiresAt.Equal(exp) {
+			t.Fatalf("expiry lost: %v, %v", got.ExpiresAt, err)
+		}
+
+		// and a link without expiry must come back with nil
+		if err := s.Save(ctx, domain.Link{Code: "never", URL: "https://example.com", CreatedAt: time.Now()}); err != nil {
+			t.Fatal(err)
+		}
+		got, _ = s.FindByCode(ctx, "never")
+		if got.ExpiresAt != nil {
+			t.Fatalf("expected nil expiry, got %v", got.ExpiresAt)
+		}
+	})
 }

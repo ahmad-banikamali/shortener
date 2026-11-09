@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/ahmad-banikamali/shortener/internal/adapter/inbound"
 	"github.com/ahmad-banikamali/shortener/internal/core/domain"
@@ -13,7 +14,7 @@ import (
 
 type fakeShorten struct{ err error }
 
-func (f fakeShorten) Shorten(_ context.Context, u string) (domain.Link, error) {
+func (f fakeShorten) Shorten(_ context.Context, u string, _ time.Duration) (domain.Link, error) {
 	return domain.Link{Code: "abc", URL: u}, f.err
 }
 

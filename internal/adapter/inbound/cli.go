@@ -33,7 +33,7 @@ func (c *CLI) Run(ctx context.Context, args []string) int {
 
 	switch cmd {
 	case "shorten":
-		link, err := c.shorten.Shorten(ctx, arg)
+		link, err := c.shorten.Shorten(ctx, arg, 0)
 		if err != nil {
 			return c.fail(err)
 		}

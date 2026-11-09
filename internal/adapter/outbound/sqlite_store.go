@@ -47,7 +47,8 @@ func NewSQLiteStore(path string) (*SQLiteStore, error) {
 	code       TEXT PRIMARY KEY,
 	url        TEXT NOT NULL,
 	created_at INTEGER NOT NULL,
-	visits     INTEGER NOT NULL DEFAULT 0
+	visits     INTEGER NOT NULL DEFAULT 0,
+	expires_at INTEGER
 )`)
 	if err != nil {
 		db.Close()
@@ -59,9 +60,14 @@ func NewSQLiteStore(path string) (*SQLiteStore, error) {
 func (s *SQLiteStore) Close() error { return s.db.Close() }
 
 func (s *SQLiteStore) Save(ctx context.Context, l domain.Link) error {
+	var expires any
+	if l.ExpiresAt != nil {
+		expires = l.ExpiresAt.Unix()
+	}
+
 	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO links (code, url, created_at) VALUES (?, ?, ?)`,
-		l.Code, l.URL, l.CreatedAt.Unix())
+		`INSERT INTO links (code, url, created_at, expires_at) VALUES (?, ?, ?, ?)`,
+		l.Code, l.URL, l.CreatedAt.Unix(), expires)
 	if err != nil {
 		// Translate the adapter-specific error into the domain error.
 		if se, ok := errors.AsType[*sqlite.Error](err); ok {
@@ -78,9 +84,16 @@ func (s *SQLiteStore) Save(ctx context.Context, l domain.Link) error {
 func (s *SQLiteStore) FindByCode(ctx context.Context, code string) (domain.Link, error) {
 	var l domain.Link
 	var created int64
+	var exp sql.NullInt64
+
 	err := s.db.QueryRowContext(ctx,
-		`SELECT code, url, created_at, visits FROM links WHERE code = ?`, code).
-		Scan(&l.Code, &l.URL, &created, &l.Visits)
+		`SELECT code, url, created_at, visits, expires_at FROM links WHERE code = ?`, code).
+		Scan(&l.Code, &l.URL, &created, &l.Visits, &exp)
+	if exp.Valid {
+		t := time.Unix(exp.Int64, 0)
+		l.ExpiresAt = &t
+	}
+
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.Link{}, domain.ErrNotFound
 	}

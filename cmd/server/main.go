@@ -20,8 +20,9 @@ func main() {
 	codes := outbound.RandomCodeGenerator{Length: 6}
 
 	// Core
-	shortener := service.NewShortener(store, codes)
-	resolver := service.NewResolver(store)
+	clock := outbound.SystemClock{}
+	shortener := service.NewShortener(store, codes, clock)
+	resolver := service.NewResolver(store, clock)
 	stats := service.NewStatsService(store)
 
 	handler := inbound.NewHTTPHandler(shortener, resolver, stats, "http://localhost:8080")

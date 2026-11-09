@@ -2,12 +2,13 @@ package port
 
 import (
 	"context"
+	"time"
 
 	"github.com/ahmad-banikamali/shortener/internal/core/domain"
 )
 
 type ShortenUseCase interface {
-	Shorten(ctx context.Context, rawURL string) (domain.Link, error)
+	Shorten(ctx context.Context, rawURL string, ttl time.Duration) (domain.Link, error)
 }
 
 type ResolveUseCase interface {
