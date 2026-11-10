@@ -1,8 +1,12 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/ahmad-banikamali/shortener/internal/adapter/inbound"
@@ -12,26 +16,53 @@ import (
 )
 
 func main() {
-	cfg := config.Load()
-	// Outbound adapters
-	store, err := outbound.NewSQLiteStore(cfg.DBPath)
-	if err != nil {
+	if err := run(); err != nil {
 		log.Fatal(err)
 	}
-	defer store.Close()
+}
+
+func run() error {
+	cfg := config.Load()
+
+	store, err := outbound.NewSQLiteStore(cfg.DBPath)
+	if err != nil {
+		return err
+	}
+	defer store.Close() // now actually runs
+
 	codes := outbound.RandomCodeGenerator{Length: 6}
-
-	// Core
 	clock := outbound.SystemClock{}
-	shortener := service.NewShortener(store, codes, clock)
-	resolver := service.NewResolver(store, clock)
-	stats := service.NewStatsService(store)
 
-	handler := inbound.NewHTTPHandler(shortener, resolver, stats, "http://localhost:8080")
+	handler := inbound.NewHTTPHandler(
+		service.NewShortener(store, codes, clock),
+		service.NewResolver(store, clock),
+		service.NewStatsService(store),
+		cfg.BaseURL,
+	)
 	mux := http.NewServeMux()
 	handler.Register(mux)
 
-	log.Println("listening on :8080")
 	srv := &http.Server{Addr: ":8080", Handler: mux, ReadHeaderTimeout: 5 * time.Second}
-	log.Fatal(srv.ListenAndServe())
+
+	// ctx is cancelled when the process receives Ctrl+C or SIGTERM.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	errCh := make(chan error, 1)
+	go func() {
+		log.Println("listening on", srv.Addr)
+		errCh <- srv.ListenAndServe()
+	}()
+
+	select {
+	case err := <-errCh:
+		return err // failed to start, e.g. port already in use
+	case <-ctx.Done():
+		log.Println("shutting down...")
+	}
+
+	// Give in-flight requests up to 10 seconds to finish.
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	return srv.Shutdown(shutdownCtx)
 }
